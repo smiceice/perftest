@@ -285,6 +285,7 @@ int main(int argc, char *argv[])
 			}
 			free(user_comm.rdma_params);
 			free(user_comm.rdma_ctx);
+			printf(FINISHED_LINE);
 			return SUCCESS;
 		}
 
@@ -296,6 +297,7 @@ int main(int argc, char *argv[])
 			return FAILURE;
 		}
 		free(user_comm.rdma_params);
+		printf(FINISHED_LINE);
 		return SUCCESS;
 	}
 
@@ -525,6 +527,7 @@ int main(int argc, char *argv[])
 		}
 		free(user_comm.rdma_params);
 		free(user_comm.rdma_ctx);
+		printf(FINISHED_LINE);
 		return SUCCESS;
 	}
 
@@ -536,6 +539,7 @@ int main(int argc, char *argv[])
 		return FAILURE;
 	}
 	free(user_comm.rdma_params);
+	printf(FINISHED_LINE);
 	return SUCCESS;
 
 destroy_context:

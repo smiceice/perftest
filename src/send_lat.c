@@ -486,13 +486,14 @@ int main(int argc, char *argv[])
 		}
 		free(user_comm.rdma_params);
 		free(user_comm.rdma_ctx);
+		printf(FINISHED_LINE);
 		return SUCCESS;
 	}
 
 	free(rem_dest);
 	free(my_dest);
 	free(user_param.ib_devname);
-
+	printf(FINISHED_LINE);
 	return send_destroy_ctx(&ctx,&user_param,&mcg_params);
 
 destroy_ctx:

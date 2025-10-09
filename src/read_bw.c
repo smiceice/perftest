@@ -279,6 +279,7 @@ int main(int argc, char *argv[])
 			}
 			free(user_comm.rdma_ctx);
 			free(user_comm.rdma_params);
+			printf(FINISHED_LINE);
 			return SUCCESS;
 		}
 		free(my_dest);
@@ -289,6 +290,7 @@ int main(int argc, char *argv[])
 			return FAILURE;
 		}
 		free(user_comm.rdma_params);
+		printf(FINISHED_LINE);
 		return SUCCESS;
 	}
 
@@ -444,6 +446,7 @@ int main(int argc, char *argv[])
 		}
 		free(user_comm.rdma_ctx);
 		free(user_comm.rdma_params);
+		printf(FINISHED_LINE);
 		return SUCCESS;
 	}
 
@@ -455,6 +458,7 @@ int main(int argc, char *argv[])
 		return FAILURE;
 	}
 	free(user_comm.rdma_params);
+	printf(FINISHED_LINE);
 	return SUCCESS;
 
 

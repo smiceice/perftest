@@ -268,6 +268,7 @@ int main(int argc, char *argv[])
 		printf(RESULT_LINE);
 
 	DEBUG_LOG(TRACE,"<<<<<<%s",__FUNCTION__);
+	printf(FINISHED_LINE);
 	return SUCCESS;
 
 promisc_flow_destroy:

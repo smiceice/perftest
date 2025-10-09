@@ -155,6 +155,7 @@ int main(int argc, char *argv[])
 	free(my_dest_info);
 	free(rem_dest_info);
 	free(user_param.ib_devname);
+	printf(FINISHED_LINE);
 	return SUCCESS;
 
 destroy_ctx:

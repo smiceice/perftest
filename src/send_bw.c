@@ -600,6 +600,7 @@ int main(int argc, char *argv[])
 		free(user_param.ib_devname);
 		free(user_comm.rdma_ctx);
 		free(user_comm.rdma_params);
+		printf(FINISHED_LINE);
 		return SUCCESS;
 	}
 
@@ -617,7 +618,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"Error: Msg rate  is below msg_rate limit\n");
 		return FAILURE;
 	}
-
+	printf(FINISHED_LINE);
 	return SUCCESS;
 
 destroy_context:
