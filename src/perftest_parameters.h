@@ -686,6 +686,8 @@ struct perftest_parameters {
 	int				processing_hints;
 	int				dynamic_cqe_poll;
 	int				sig_offload;
+	int				recv_num_sge;
+	int				send_num_sge;
 };
 
 struct report_options {

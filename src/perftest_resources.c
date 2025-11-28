@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1220,6 +1221,9 @@ int alloc_ctx(struct pingpong_context *ctx,struct perftest_parameters *user_para
 				user_param->connection_type == DC || user_param->connection_type == SRD) {
 			ALLOC(ctx->ah, struct ibv_ah*, user_param->num_of_qps);
 		}
+		if (user_param->send_num_sge > 1) {
+			ALLOC(ctx->send_num_sge_list, struct ibv_sge, user_param->send_num_sge);
+		}
 	} else if ((user_param->verb == READ || user_param->verb == WRITE || user_param->verb == WRITE_IMM) && user_param->connection_type == SRD) {
 		ALLOC(ctx->ah, struct ibv_ah*, user_param->num_of_qps);
 	}
@@ -1230,6 +1234,9 @@ int alloc_ctx(struct pingpong_context *ctx,struct perftest_parameters *user_para
 		ALLOC(ctx->rwr, struct ibv_recv_wr,
 			 user_param->num_of_qps * user_param->recv_post_list);
 		ALLOC(ctx->rx_buffer_addr, uint64_t, user_param->num_of_qps);
+		if (user_param->recv_num_sge > 1) {
+			ALLOC(ctx->recv_num_sge_list, struct ibv_sge, user_param->recv_num_sge);
+		}
 	}
 	if (user_param->mac_fwd == ON )
 		ctx->cycle_buffer = user_param->size * user_param->rx_depth;
@@ -1331,6 +1338,9 @@ void dealloc_ctx(struct pingpong_context *ctx,struct perftest_parameters *user_p
 		if (ctx->rem_qpn != NULL)
 			free(ctx->rem_qpn);
 
+		if (ctx->send_num_sge_list != NULL)
+			free(ctx->send_num_sge_list);
+
 		if ((user_param->verb == SEND && user_param->connection_type == UD) ||
 				user_param->connection_type == DC || user_param->connection_type == SRD) {
 		if (ctx->ah != NULL)
@@ -1348,6 +1358,9 @@ void dealloc_ctx(struct pingpong_context *ctx,struct perftest_parameters *user_p
 			free(ctx->rwr);
 		if (ctx->rx_buffer_addr != NULL)
 			free(ctx->rx_buffer_addr);
+
+		if (ctx->recv_num_sge_list != NULL)
+			free(ctx->recv_num_sge_list);
 	}
 
 	if (ctx->memory != NULL) {
@@ -1901,9 +1914,9 @@ static void initialize_buffer_content(struct pingpong_context *ctx,
 }
 
 #ifdef HAVE_REG_MR_EX
-static struct ibv_mr *register_mr_ex(struct pingpong_context *ctx, 
+static struct ibv_mr *register_mr_ex(struct pingpong_context *ctx,
 				     struct perftest_parameters *user_param,
-				     int qp_index, int flags, int dmabuf_fd, 
+				     int qp_index, int flags, int dmabuf_fd,
 				     uint64_t dmabuf_offset)
 {
 	struct ibv_mr_init_attr in = {};
@@ -1981,9 +1994,9 @@ static int register_memory_region(struct pingpong_context *ctx,
 	struct ibv_mr *mr = NULL;
 
 	/* Select the appropriate registration function */
-	struct ibv_mr *(*register_func)(struct pingpong_context *ctx, 
+	struct ibv_mr *(*register_func)(struct pingpong_context *ctx,
 					struct perftest_parameters *user_param,
-					int qp_index, int flags, int dmabuf_fd, 
+					int qp_index, int flags, int dmabuf_fd,
 					uint64_t dmabuf_offset);
 
 #ifdef HAVE_REG_MR_EX
@@ -2803,6 +2816,13 @@ struct ibv_qp* ctx_qp_create(struct pingpong_context *ctx,
 		}
 	}
 
+	if(user_param->recv_num_sge > 1){
+		attr.cap.max_recv_sge = user_param->recv_num_sge;
+	}
+	if(user_param->send_num_sge > 1){
+		attr.cap.max_send_sge = user_param->send_num_sge;
+	}
+
 	switch (user_param->connection_type) {
 
 		case RC : attr.qp_type = IBV_QPT_RC; break;
@@ -3611,6 +3631,12 @@ void ctx_set_send_reg_wqes(struct pingpong_context *ctx,
 			ctx->wr[i*user_param->post_list + j].num_sge = MAX_SEND_SGE;
 			ctx->wr[i*user_param->post_list + j].wr_id   = build_wr_id(i * user_param->post_list + j, i);
 
+			if ((1 < user_param->send_num_sge) && (user_param->send_num_sge <= ctx->sge_list[i*user_param->post_list + j].length)){
+				ctx->wr[i * user_param->post_list + j].num_sge = user_param->send_num_sge;
+				split_sg_list(ctx, &ctx->sge_list[i * user_param->post_list + j], ctx->send_num_sge_list, user_param->send_num_sge);
+				ctx->wr[i * user_param->post_list + j].sg_list = ctx->send_num_sge_list;
+			}
+
 			if (j == (user_param->post_list - 1)) {
 				ctx->wr[i*user_param->post_list + j].next = NULL;
 			} else {
@@ -3763,6 +3789,12 @@ int ctx_set_recv_wqes(struct pingpong_context *ctx,struct perftest_parameters *u
 			ctx->rwr[i * user_param->recv_post_list + j].sg_list = &ctx->recv_sge_list[i * user_param->recv_post_list + j];
 			ctx->rwr[i * user_param->recv_post_list + j].num_sge = MAX_RECV_SGE;
 			ctx->rwr[i * user_param->recv_post_list + j].wr_id   = build_wr_id(i * user_param->recv_post_list + j, i);
+
+			if ((1 < user_param->recv_num_sge) && (user_param->recv_num_sge <= ctx->recv_sge_list[i * user_param->recv_post_list + j].length)){
+				ctx->rwr[i * user_param->recv_post_list + j].num_sge = user_param->recv_num_sge;
+				split_sg_list(ctx, &ctx->recv_sge_list[i * user_param->recv_post_list + j], ctx->recv_num_sge_list, user_param->recv_num_sge);
+				ctx->rwr[i * user_param->recv_post_list + j].sg_list = ctx->recv_num_sge_list;
+			}
 
 			if (j == (user_param->recv_post_list - 1))
 				ctx->rwr[i * user_param->recv_post_list + j].next = NULL;
@@ -6178,6 +6210,28 @@ int error_handler(char *error_message)
 {
 	fprintf(stderr, "%s\nERRNO: %s.\n", error_message, strerror(errno));
 	return FAILURE;
+}
+
+void split_sg_list(struct pingpong_context *ctx, struct ibv_sge *sg_list,
+                   struct ibv_sge *split_sg_list, int num_sge)
+{
+  uint64_t total_length = sg_list->length;
+  uint64_t base_length = total_length / num_sge;
+  uint64_t left_length = total_length % num_sge;
+
+  uint64_t current_offset = 0;
+  int i;
+  for (i = 0; i < num_sge; i++) {
+	uint64_t split_length = base_length;
+	if (i < left_length) {
+		split_length++;
+	}
+    split_sg_list[i].addr = sg_list->addr + current_offset;
+    split_sg_list[i].length = split_length;
+    split_sg_list[i].lkey = sg_list->lkey;
+
+    current_offset += split_length;
+  }
 }
 
 /******************************************************************************

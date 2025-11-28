@@ -301,6 +301,8 @@ struct pingpong_context {
 	#ifdef HAVE_REG_MR_EX
 	struct ibv_dmah				*dmah;
 	#endif
+	struct ibv_sge				*send_num_sge_list;
+	struct ibv_sge				*recv_num_sge_list;
 };
 
  struct pingpong_dest {
@@ -1089,5 +1091,8 @@ int rdma_cm_destroy_cma(struct pingpong_context *ctx,
 int error_handler(char *error_message);
 
 void check_bf_support(struct pingpong_context *ctx);
+
+void split_sg_list(struct pingpong_context *ctx, struct ibv_sge *sg_list,
+                   struct ibv_sge *split_sg_list, int num_sge);
 
 #endif /* PERFTEST_RESOURCES_H */

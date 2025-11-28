@@ -489,6 +489,11 @@ static void usage(const char *argv0, VerbType verb, TestType tst, int connection
 	/*Long flags*/
 	putchar('\n');
 
+	printf("      --recv_num_sge ");
+	printf(" Number of SGE in each recv WR (default 1)\n");
+	printf("      --send_num_sge ");
+	printf(" Number of SGE in each send WR (default 1)\n");
+
 	printf("      --out_json ");
 	printf(" Save the report in a json file\n");
 
@@ -951,6 +956,8 @@ static void init_perftest_params(struct perftest_parameters *user_param)
 	user_param->vlan_en             = OFF;
 	user_param->vlan_pcp		= 1;
 	user_param->print_eth_func 	= &print_ethernet_header;
+	user_param->recv_num_sge = 1;
+	user_param->send_num_sge = 1;
 
 	if (user_param->tst == LAT) {
 		user_param->r_flag->unsorted	= OFF;
@@ -2674,6 +2681,9 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 	static int sig_offload_flag = 0;
 	#endif
 
+	static int recv_num_sge_flag = 0;
+	static int send_num_sge_flag = 0;
+
 	char *server_ip = NULL;
 	char *client_ip = NULL;
 	char *local_ip = NULL;
@@ -2860,6 +2870,8 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 			#ifdef HAVE_SIG_OFFLOAD
 			{.name = "sig_offload", .has_arg = 0, .flag = &sig_offload_flag, .val = 1 },
 			#endif
+			{.name = "recv_num_sge", .has_arg = 1, .flag = &recv_num_sge_flag, .val = 1},
+			{.name = "send_num_sge", .has_arg = 1, .flag = &send_num_sge_flag, .val = 1},
 			{0}
 		};
 		if (!duplicates_checker) {
@@ -3655,6 +3667,12 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 					user_param->sig_offload = 1;
 				}
 				#endif
+				if (recv_num_sge_flag){
+					CHECK_VALUE(user_param->recv_num_sge,int,"recv sge nums",not_int_ptr);
+				}
+				if (send_num_sge_flag){
+					CHECK_VALUE(user_param->send_num_sge,int,"send sge nums",not_int_ptr);
+				}
 				break;
 			default:
 				  fprintf(stderr," Invalid Command or flag.\n");
